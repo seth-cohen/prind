@@ -14,8 +14,28 @@ x-ustreamer-svc: &ustreamer-svc
 ## Add your personal config here
 services:
   klipper:
+    image: klipper:latest
+    build:
+      context: docker/klipper
+      target: run
+    depends_on:
+      - klipper_host_mcu
+    volumes:
+      - temp_dir:/tmp
+      - /dev:/dev
     devices:
-      - /dev/ttymxc3:/dev/ttymxc3
+      - "/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.1:1.0=/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.1:1.0"
+      - "/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.2:1.0=/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.2:1.0"
+
+  klipper_host_mcu:
+    image: klipper_host_mcu:latest
+    container_name: host_mcu
+    build:
+      context: docker/klipper
+      target: host_mcu
+    volumes:
+      - temp_dir:/tmp
+      - /dev:/dev
 
   webcam:
     <<: *ustreamer-svc
@@ -29,3 +49,6 @@ services:
       - "traefik.http.routers.webcam.entrypoints=web"
       - "traefik.http.middlewares.webcam.stripprefix.prefixes=/webcam"
       - "traefik.http.routers.webcam.middlewares=webcam"
+
+volumes:
+  temp_dir:

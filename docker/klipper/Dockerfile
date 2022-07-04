@@ -29,9 +29,26 @@ RUN groupadd klipper --gid 1000 \
  && chown -R klipper:klipper /opt/*
 
 USER klipper
-VOLUME ["/opt/run", "/opt/cfg", "/opt/gcode"]
+VOLUME ["/opt/run", "/opt/cfg", "/opt/gcode", "/tmp"]
 ENTRYPOINT ["/opt/venv/bin/python", "klipper/klippy/klippy.py"]
 CMD ["-I", "run/klipper.tty", "-a", "run/klipper.sock", "cfg/printer.cfg"]
+
+## Klipper Host MCU Image
+FROM python:2-slim as host_mcu
+
+WORKDIR /opt
+RUN mkdir bin log
+COPY --chown=klipper:klipper ./out/klipper.elf /opt/bin/klipper_mcu
+RUN chmod a+x /opt/bin/klipper_mcu
+
+RUN groupadd klipper --gid 1000 \
+ && useradd klipper --uid 1000 --gid klipper \
+ && usermod klipper --append --groups dialout \
+ && chown -R klipper:klipper /opt/*
+
+USER klipper
+VOLUME ["/opt/cfg", "/tmp"]
+CMD ["/opt/bin/klipper_mcu", "-r"]
 
 ## For building MCU Code
 FROM ubuntu:18.04 as mcu
